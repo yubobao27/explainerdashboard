@@ -1233,7 +1233,7 @@ class BaseExplainer(ABC):
                     else self.shap_kwargs
                 )
                 shap_row = pd.DataFrame(
-                    self.shap_explainer.shap_values(X_row, **self.shap_kwargs),
+                    self.shap_explainer.shap_values(X_row, **self.shap_kwargs, check_additivity=False), #yb
                     columns=self.columns,
                 )
             shap_row = merge_categorical_shap_values(
