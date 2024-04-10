@@ -4917,7 +4917,7 @@ class XGBExplainer(TreeExplainer):
             self._shadow_trees = [
                 ShadowDecTree.get_shadow_tree(
                     self.model.get_booster(),
-                    self.X,
+                    self.X.fillna(0),
                     self.y.astype("int32"),
                     feature_names=self.X.columns.tolist(),
                     target_name="target",
