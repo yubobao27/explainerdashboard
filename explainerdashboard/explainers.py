@@ -1636,7 +1636,7 @@ class BaseExplainer(ABC):
 
         return get_contrib_df(
             shap_base_value=self.shap_base_value(pos_label),
-            shap_values=shap_values.values[0],
+            shap_values=shap_values.values[0]*10,
             X_row=remove_cat_names(
                 X_row_merged, self.onehot_dict, self.onehot_notencoded
             ),
