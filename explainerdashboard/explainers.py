@@ -4234,6 +4234,14 @@ class RegressionExplainer(BaseExplainer):
                 pass
         return preds_df
 
+    def dir_accuracy(self, y, preds):
+        sign = y.values * preds
+        if len(sign)==0:
+            accuracy_dir=0
+        else:
+            accuracy_dir = round(len(sign[sign>0])/len(sign),2)
+        return accuracy_dir
+
     def metrics(self, show_metrics: List[str] = None):
         """dict of performance metrics: root_mean_squared_error, mean_absolute_error and R-squared
 
@@ -4248,6 +4256,7 @@ class RegressionExplainer(BaseExplainer):
             )
         if self.cv is None:
             metrics_dict = {
+                "direction accuracy":self.dir_accuracy(self.y, self.preds),
                 "mean-squared-error": mean_squared_error(self.y, self.preds),
                 "root-mean-squared-error": np.sqrt(
                     mean_squared_error(self.y, self.preds)
