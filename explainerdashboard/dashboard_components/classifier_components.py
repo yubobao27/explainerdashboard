@@ -31,9 +31,9 @@ class ClassifierRandomIndexComponent(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Select Random Index",
+        title="Choose Random",
         name=None,
-        subtitle="Select from list or pick at random",
+        subtitle="Select one observation",
         hide_title=False,
         hide_subtitle=False,
         hide_index=False,

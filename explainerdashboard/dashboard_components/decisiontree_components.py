@@ -28,7 +28,7 @@ class DecisionTreesComponent(ExplainerComponent):
         explainer,
         title="Decision Trees",
         name=None,
-        subtitle="Displaying individual decision trees",
+        subtitle="Individual decision trees",
         hide_title=False,
         hide_subtitle=False,
         hide_index=False,

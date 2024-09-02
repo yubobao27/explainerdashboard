@@ -169,9 +169,9 @@ class ImportancesComponent(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Feature Importances",
+        title="Variable Importances",
         name=None,
-        subtitle="Which features had the biggest impact?",
+        subtitle="Which variable had the biggest impact?",
         hide_type=False,
         hide_depth=False,
         hide_popout=False,
@@ -562,9 +562,9 @@ class PdpComponent(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Partial Dependence Plot",
+        title="Partial Dependence",
         name=None,
-        subtitle="How does the prediction change if you change one feature?",
+        subtitle="Prediction outcome sensitivity to a single variable, while holding the rest constant",
         hide_col=False,
         hide_index=False,
         hide_title=False,
@@ -702,7 +702,7 @@ class PdpComponent(ExplainerComponent):
                                     dbc.Col(
                                         [
                                             dbc.Label(
-                                                "Feature:",
+                                                "KPI:",
                                                 html_for="pdp-col" + self.name,
                                                 id="pdp-col-label-" + self.name,
                                             ),

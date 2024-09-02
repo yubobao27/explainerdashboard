@@ -29,7 +29,7 @@ class ImportancesComposite(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Feature Importances",
+        title="Variable Importances",
         name=None,
         hide_title=True,
         hide_importances=False,
@@ -846,7 +846,7 @@ class ShapDependenceComposite(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Feature Dependence",
+        title="Variable Dependence",
         name=None,
         hide_selector=True,
         hide_shapsummary=False,
