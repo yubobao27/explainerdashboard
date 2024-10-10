@@ -48,8 +48,10 @@ from sklearn.metrics import (
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.metrics import average_precision_score
 
+
 from .explainer_methods import *
 from .explainer_plots import *
+
 
 import plotly.io as pio
 
@@ -73,7 +75,7 @@ def insert_pos_label(func):
                 kwargs.update(dict(pos_label=self.pos_label))
                 return func(self, *args, **kwargs)
         kwargs.update(
-            dict(zip(inspect.getfullargspec(func).args[1: 1 + len(args)], args))
+            dict(zip(inspect.getfullargspec(func).args[1 : 1 + len(args)], args))
         )
         if "pos_label" in kwargs:
             if kwargs["pos_label"] is not None:
@@ -91,27 +93,26 @@ class BaseExplainer(ABC):
     """ """
 
     def __init__(
-            self,
-            model,
-            X: pd.DataFrame,
-            y: pd.Series = None,
-            permutation_metric: Callable = r2_score,
-            shap: str = "guess",
-            X_background: pd.DataFrame = None,
-            model_output: str = "raw",
-            cats: bool = None,
-            cats_notencoded: Dict = None,
-            idxs: pd.Index = None,
-            index_name: str = None,
-            target: str = None,
-            descriptions: dict = None,
-            n_jobs: int = None,
-            permutation_cv: int = None,
-            cv: int = None,
-            na_fill: float = -999,
-            precision: str = "float64",
-            shap_kwargs: Dict = None,
-            X_train=None
+        self,
+        model,
+        X: pd.DataFrame,
+        y: pd.Series = None,
+        permutation_metric: Callable = r2_score,
+        shap: str = "guess",
+        X_background: pd.DataFrame = None,
+        model_output: str = "raw",
+        cats: bool = None,
+        cats_notencoded: Dict = None,
+        idxs: pd.Index = None,
+        index_name: str = None,
+        target: str = None,
+        descriptions: dict = None,
+        n_jobs: int = None,
+        permutation_cv: int = None,
+        cv: int = None,
+        na_fill: float = -999,
+        precision: str = "float64",
+        shap_kwargs: Dict = None,
     ):
         """Defines the basic functionality that is shared by both
         ClassifierExplainer and RegressionExplainer.
@@ -184,7 +185,7 @@ class BaseExplainer(ABC):
                 cv = permutation_cv
 
         if safe_isinstance(
-                model, "sklearn.pipeline.Pipeline", "imblearn.pipeline.Pipeline"
+            model, "sklearn.pipeline.Pipeline", "imblearn.pipeline.Pipeline"
         ):
             if shap != "kernel":
                 try:
@@ -209,7 +210,6 @@ class BaseExplainer(ABC):
 
         if not hasattr(self, "X"):
             self.X = X.copy()
-            self.X_train = X_train  # yb
         if not hasattr(self, "X_background"):
             if X_background is not None:
                 self.X_background = X_background.copy()
@@ -467,15 +467,15 @@ class BaseExplainer(ABC):
             joblib.dump(self, filepath)
 
     def to_yaml(
-            self,
-            filepath=None,
-            return_dict=False,
-            modelfile="model.pkl",
-            datafile="data.csv",
-            index_col=None,
-            target_col=None,
-            explainerfile="explainer.joblib",
-            dashboard_yaml="dashboard.yaml",
+        self,
+        filepath=None,
+        return_dict=False,
+        modelfile="model.pkl",
+        datafile="data.csv",
+        index_col=None,
+        target_col=None,
+        explainerfile="explainer.joblib",
+        dashboard_yaml="dashboard.yaml",
     ):
         """Returns a yaml configuration for the current Explainer
         that can be used by the explainerdashboard CLI. Recommended filename
@@ -750,7 +750,7 @@ class BaseExplainer(ABC):
             )
 
     def get_row_from_input(
-            self, inputs: List, ranked_by_shap=False, return_merged=False
+        self, inputs: List, ranked_by_shap=False, return_merged=False
     ):
         """returns a single row pd.DataFrame from a given list of *inputs"""
         if len(inputs) == 1 and isinstance(inputs[0], list):
@@ -813,7 +813,7 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def get_col_value_plus_prediction(
-            self, col, index=None, X_row=None, pos_label=None
+        self, col, index=None, X_row=None, pos_label=None
     ):
         """return value of col and prediction for either index or X_row
 
@@ -828,7 +828,7 @@ class BaseExplainer(ABC):
 
         """
         assert (col in self.X.columns) or (
-                col in self.onehot_cols
+            col in self.onehot_cols
         ), f"{col} not in columns of dataset"
         if index is not None:
             X_row = self.get_X_row(index)
@@ -1060,10 +1060,7 @@ class BaseExplainer(ABC):
                     "Generating self.shap_explainer = "
                     f"shap.TreeExplainer(model{NoX_str})"
                 )
-                if type(self.model).__name__.startswith('CatBoost'):  # YB
-                    self._shap_explainer = shap.TreeExplainer(self.model)
-                else:
-                    self._shap_explainer = shap.TreeExplainer(self.model, self.X_train)  # YB
+                self._shap_explainer = shap.TreeExplainer(self.model)
             elif self.shap == "linear":
                 if self.X_background is None:
                     print(
@@ -1158,20 +1155,18 @@ class BaseExplainer(ABC):
         """SHAP values calculated using the shap library"""
         if not hasattr(self, "_shap_values_df"):
             print("Calculating shap values...", flush=True)
-            x = self.X
-            # x=self.X_train   #YB
             if self.shap == "skorch":
                 import torch
 
                 self._shap_values_df = pd.DataFrame(
                     self.shap_explainer.shap_values(
-                        torch.tensor(x.values), **self.shap_kwargs
+                        torch.tensor(self.X.values), **self.shap_kwargs
                     ),
                     columns=self.columns,
                 )
             else:
                 self._shap_values_df = pd.DataFrame(
-                    self.shap_explainer.shap_values(x, **self.shap_kwargs),
+                    self.shap_explainer.shap_values(self.X, **self.shap_kwargs),
                     columns=self.columns,
                 )
             self._shap_values_df = merge_categorical_shap_values(
@@ -1238,7 +1233,7 @@ class BaseExplainer(ABC):
                     else self.shap_kwargs
                 )
                 shap_row = pd.DataFrame(
-                    self.shap_explainer.shap_values(X_row, **self.shap_kwargs),  # yb check_additivity=False
+                    self.shap_explainer.shap_values(X_row, **self.shap_kwargs), #, check_additivity=False), #yb
                     columns=self.columns,
                 )
             shap_row = merge_categorical_shap_values(
@@ -1288,9 +1283,9 @@ class BaseExplainer(ABC):
         if not isinstance(shap_interaction_values, np.ndarray):
             raise ValueError("shap_interaction_values should be a numpy array")
         if not shap_interaction_values.shape == (
-                len(self.X),
-                len(self.original_cols),
-                len(self.original_cols),
+            len(self.X),
+            len(self.original_cols),
+            len(self.original_cols),
         ):
             raise ValueError(
                 "shap interaction_values should be of shape "
@@ -1405,15 +1400,15 @@ class BaseExplainer(ABC):
         assert col in self.merged_cols, f"{col} not in self.merged_cols!"
         if interact_col is None:
             return self.shap_interaction_values(pos_label)[
-                   :, self.merged_cols.get_loc(col), :
-                   ]
+                :, self.merged_cols.get_loc(col), :
+            ]
         else:
             assert (
-                    interact_col in self.merged_cols
+                interact_col in self.merged_cols
             ), f"{interact_col} not in self.merged_cols!"
             return self.shap_interaction_values(pos_label)[
-                   :, self.merged_cols.get_loc(col), self.merged_cols.get_loc(interact_col)
-                   ]
+                :, self.merged_cols.get_loc(col), self.merged_cols.get_loc(interact_col)
+            ]
 
     def calculate_properties(self, include_interactions=True):
         """Explicitely calculates all lazily calculated properties.
@@ -1497,13 +1492,13 @@ class BaseExplainer(ABC):
         )
 
     def random_index(
-            self,
-            y_min=None,
-            y_max=None,
-            pred_min=None,
-            pred_max=None,
-            return_str=False,
-            **kwargs,
+        self,
+        y_min=None,
+        y_max=None,
+        pred_min=None,
+        pred_max=None,
+        return_str=False,
+        **kwargs,
     ):
         """random index following constraints
 
@@ -1536,11 +1531,11 @@ class BaseExplainer(ABC):
                 & (self.y <= y_max)
                 & (self.preds >= pred_min)
                 & (self.preds <= pred_max)
-                ].index
+            ].index
         else:
             potential_idxs = self.y[
                 (self.preds >= pred_min) & (self.preds <= pred_max)
-                ].index
+            ].index
 
         if len(potential_idxs) > 0:
             idx = np.random.choice(potential_idxs)
@@ -1572,7 +1567,7 @@ class BaseExplainer(ABC):
 
         """
         assert (
-                kind == "shap" or kind == "permutation"
+            kind == "shap" or kind == "permutation"
         ), "kind should either be 'shap' or 'permutation'!"
         if kind == "permutation":
             return self.get_permutation_importances_df(topx, cutoff, pos_label)
@@ -1581,7 +1576,7 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def get_contrib_df(
-            self, index=None, X_row=None, topx=None, cutoff=None, sort="abs", pos_label=None
+        self, index=None, X_row=None, topx=None, cutoff=None, sort="abs", pos_label=None
     ):
         """shap value contributions to the prediction for index.
 
@@ -1641,7 +1636,7 @@ class BaseExplainer(ABC):
 
         return get_contrib_df(
             shap_base_value=self.shap_base_value(pos_label),
-            shap_values=shap_values.values[0] * 10,  # YB scale
+            shap_values=shap_values.values[0]*10,#YB scale
             X_row=remove_cat_names(
                 X_row_merged, self.onehot_dict, self.onehot_notencoded
             ),
@@ -1653,14 +1648,14 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def get_contrib_summary_df(
-            self,
-            index=None,
-            X_row=None,
-            topx=None,
-            cutoff=None,
-            round=2,
-            sort="abs",
-            pos_label=None,
+        self,
+        index=None,
+        X_row=None,
+        topx=None,
+        cutoff=None,
+        round=2,
+        sort="abs",
+        pos_label=None,
     ):
         """Takes a contrib_df, and formats it to a more human readable format
 
@@ -1716,15 +1711,15 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def pdp_df(
-            self,
-            col,
-            index=None,
-            X_row=None,
-            drop_na=True,
-            sample=500,
-            n_grid_points=10,
-            pos_label=None,
-            sort="freq",
+        self,
+        col,
+        index=None,
+        X_row=None,
+        drop_na=True,
+        sample=500,
+        n_grid_points=10,
+        pos_label=None,
+        sort="freq",
     ):
         """Return a pdp_df for generating partial dependence plots.
 
@@ -1746,7 +1741,7 @@ class BaseExplainer(ABC):
             pd.DataFrame
         """
         assert (
-                col in self.X.columns or col in self.onehot_cols
+            col in self.X.columns or col in self.onehot_cols
         ), f"{col} not in columns of dataset"
         if col in self.onehot_cols:
             grid_values = self.ordered_cats(col, n_grid_points, sort)
@@ -1828,7 +1823,7 @@ class BaseExplainer(ABC):
         )
 
         if all([str(c).startswith(col + "_") for c in pdp_df.columns]):
-            pdp_df.columns = [str(c)[len(col) + 1:] for c in pdp_df.columns]
+            pdp_df.columns = [str(c)[len(col) + 1 :] for c in pdp_df.columns]
         if self.is_classifier and self.model_output == "probability":
             pdp_df = pdp_df.multiply(100)
         return pdp_df
@@ -1874,12 +1869,12 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_importances_detailed(
-            self,
-            highlight_index=None,
-            topx=None,
-            max_cat_colors=5,
-            plot_sample=None,
-            pos_label=None,
+        self,
+        highlight_index=None,
+        topx=None,
+        max_cat_colors=5,
+        plot_sample=None,
+        pos_label=None,
     ):
         """Plot barchart of mean absolute shap value.
 
@@ -1939,16 +1934,16 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_contributions(
-            self,
-            index=None,
-            X_row=None,
-            topx=None,
-            cutoff=None,
-            sort="abs",
-            orientation="vertical",
-            higher_is_better=True,
-            round=2,
-            pos_label=None,
+        self,
+        index=None,
+        X_row=None,
+        topx=None,
+        cutoff=None,
+        sort="abs",
+        orientation="vertical",
+        higher_is_better=True,
+        round=2,
+        pos_label=None,
     ):
         """plot waterfall plot of shap value contributions to the model prediction for index.
 
@@ -1998,11 +1993,11 @@ class BaseExplainer(ABC):
         )
 
     def get_idx_sample(
-            self,
-            sample_size=None,
-            include_index=None,
-            outlier_array1=None,
-            outlier_array2=None,
+        self,
+        sample_size=None,
+        include_index=None,
+        outlier_array1=None,
+        outlier_array2=None,
     ):
         """returns a random sample of integer indexes, making sure that
         include_index is included. Outlier indexes can be excluded.
@@ -2028,7 +2023,7 @@ class BaseExplainer(ABC):
                 idx_sample = idx_sample[
                     (outlier_array2[idx_sample] >= lb)
                     & (outlier_array2[idx_sample] <= ub)
-                    ]
+                ]
 
             if sample_size is not None and sample_size < len(idx_sample):
                 assert sample_size >= 0, "sample_size should be a positive integer!"
@@ -2045,17 +2040,17 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_dependence(
-            self,
-            col,
-            color_col=None,
-            highlight_index=None,
-            topx=None,
-            sort="alphabet",
-            max_cat_colors=5,
-            round=3,
-            plot_sample=None,
-            remove_outliers=False,
-            pos_label=None,
+        self,
+        col,
+        color_col=None,
+        highlight_index=None,
+        topx=None,
+        sort="alphabet",
+        max_cat_colors=5,
+        round=3,
+        plot_sample=None,
+        remove_outliers=False,
+        pos_label=None,
     ):
         """plot shap dependence
 
@@ -2095,8 +2090,8 @@ class BaseExplainer(ABC):
             else None,
             self.get_col(color_col).values
             if remove_outliers
-               and color_col is not None
-               and color_col not in self.cat_cols
+            and color_col is not None
+            and color_col not in self.cat_cols
             else None,
         )
         highlight_index = self.get_index(highlight_index)
@@ -2131,16 +2126,16 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_interaction(
-            self,
-            col,
-            interact_col,
-            highlight_index=None,
-            topx=10,
-            sort="alphabet",
-            max_cat_colors=5,
-            plot_sample=None,
-            remove_outliers=False,
-            pos_label=None,
+        self,
+        col,
+        interact_col,
+        highlight_index=None,
+        topx=10,
+        sort="alphabet",
+        max_cat_colors=5,
+        plot_sample=None,
+        remove_outliers=False,
+        pos_label=None,
     ):
         """plots a dependence plot for shap interaction effects
 
@@ -2221,13 +2216,13 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_interactions_detailed(
-            self,
-            col,
-            highlight_index=None,
-            topx=None,
-            max_cat_colors=5,
-            plot_sample=None,
-            pos_label=None,
+        self,
+        col,
+        highlight_index=None,
+        topx=None,
+        max_cat_colors=5,
+        plot_sample=None,
+        pos_label=None,
     ):
         """Plot barchart of mean absolute shap interaction values
 
@@ -2271,17 +2266,17 @@ class BaseExplainer(ABC):
 
     @insert_pos_label
     def plot_pdp(
-            self,
-            col,
-            index=None,
-            X_row=None,
-            drop_na=True,
-            sample=100,
-            gridlines=100,
-            gridpoints=10,
-            sort="freq",
-            round=2,
-            pos_label=None,
+        self,
+        col,
+        index=None,
+        X_row=None,
+        drop_na=True,
+        sample=100,
+        gridlines=100,
+        gridpoints=10,
+        sort="freq",
+        round=2,
+        pos_label=None,
     ):
         """plot partial dependence plot (pdp)
 
@@ -2329,11 +2324,11 @@ class BaseExplainer(ABC):
                 col, index=index, X_row=X_row, pos_label=pos_label
             )
             if (
-                    col in self.cat_cols
-                    and col_value not in pdp_df.columns
-                    and col_value[len(col) + 1:] in pdp_df.columns
+                col in self.cat_cols
+                and col_value not in pdp_df.columns
+                and col_value[len(col) + 1 :] in pdp_df.columns
             ):
-                col_value = col_value[len(col) + 1:]
+                col_value = col_value[len(col) + 1 :]
             return plotly_pdp(
                 pdp_df,
                 display_index=0,  # the idx to be displayed is always set to the first row by self.pdp_df()
@@ -2360,29 +2355,28 @@ class ClassifierExplainer(BaseExplainer):
     """ """
 
     def __init__(
-            self,
-            model,
-            X: pd.DataFrame,
-            y: pd.Series = None,
-            permutation_metric: Callable = roc_auc_score,
-            shap: str = "guess",
-            X_background: pd.DataFrame = None,
-            model_output: str = "probability",
-            cats: Union[List, Dict] = None,
-            cats_notencoded: Dict = None,
-            idxs: pd.Index = None,
-            index_name: str = None,
-            target: str = None,
-            descriptions: Dict = None,
-            n_jobs: int = None,
-            permutation_cv: int = None,
-            cv: int = None,
-            na_fill: float = -999,
-            precision: str = "float64",
-            shap_kwargs: Dict = None,
-            labels: List = None,
-            pos_label: int = 1,
-            X_train=None
+        self,
+        model,
+        X: pd.DataFrame,
+        y: pd.Series = None,
+        permutation_metric: Callable = roc_auc_score,
+        shap: str = "guess",
+        X_background: pd.DataFrame = None,
+        model_output: str = "probability",
+        cats: Union[List, Dict] = None,
+        cats_notencoded: Dict = None,
+        idxs: pd.Index = None,
+        index_name: str = None,
+        target: str = None,
+        descriptions: Dict = None,
+        n_jobs: int = None,
+        permutation_cv: int = None,
+        cv: int = None,
+        na_fill: float = -999,
+        precision: str = "float64",
+        shap_kwargs: Dict = None,
+        labels: List = None,
+        pos_label: int = 1,
     ):
         """
         Explainer for classification models. Defines the shap values for
@@ -2463,7 +2457,6 @@ class ClassifierExplainer(BaseExplainer):
             na_fill,
             precision,
             shap_kwargs,
-            X_train=None
         )
 
         assert hasattr(model, "predict_proba"), (
@@ -2487,9 +2480,9 @@ class ClassifierExplainer(BaseExplainer):
         if not self.y_missing:
             self.y = self.y.astype("int16")
         if (
-                self.categorical_cols
-                and model_output == "probability"
-                and not isinstance(self.model, Pipeline)
+            self.categorical_cols
+            and model_output == "probability"
+            and not isinstance(self.model, Pipeline)
         ):
             print(
                 "Warning: Models that deal with categorical features directly "
@@ -2507,7 +2500,7 @@ class ClassifierExplainer(BaseExplainer):
         self.pos_label = pos_label
         self.is_classifier = True
         if safe_isinstance(
-                self.model, "RandomForestClassifier", "ExtraTreesClassifier"
+            self.model, "RandomForestClassifier", "ExtraTreesClassifier"
         ):
             print(
                 "Detected RandomForestClassifier model: "
@@ -2538,7 +2531,7 @@ class ClassifierExplainer(BaseExplainer):
     @pos_label.setter
     def pos_label(self, label):
         if label is None or (
-                isinstance(label, int) and label >= 0 and label < len(self.labels)
+            isinstance(label, int) and label >= 0 and label < len(self.labels)
         ):
             self._pos_label = label
         elif isinstance(label, str) and label in self.labels:
@@ -2556,11 +2549,11 @@ class ClassifierExplainer(BaseExplainer):
         if isinstance(pos_label, int):
             assert pos_label >= 0 and pos_label <= len(
                 self.labels
-            ), f"pos_label={pos_label}, but should be >= 0 and <= {len(self.labels) - 1}!"
+            ), f"pos_label={pos_label}, but should be >= 0 and <= {len(self.labels)-1}!"
             return pos_label
         elif isinstance(pos_label, str):
             assert (
-                    pos_label in self.labels
+                pos_label in self.labels
             ), f"Unknown pos_label. {pos_label} not in self.labels!"
             return self.labels.index(pos_label)
         raise ValueError("pos_label should either be int or str in self.labels!")
@@ -2661,12 +2654,12 @@ class ClassifierExplainer(BaseExplainer):
             )
             if self.shap == "tree":
                 if safe_isinstance(
-                        self.model,
-                        "XGBClassifier",
-                        "LGBMClassifier",
-                        "CatBoostClassifier",
-                        "GradientBoostingClassifier",
-                        "HistGradientBoostingClassifier",
+                    self.model,
+                    "XGBClassifier",
+                    "LGBMClassifier",
+                    "CatBoostClassifier",
+                    "GradientBoostingClassifier",
+                    "HistGradientBoostingClassifier",
                 ):
                     if self.model_output == "probability":
                         if self.X_background is None:
@@ -2700,13 +2693,9 @@ class ClassifierExplainer(BaseExplainer):
                         print(
                             f"Generating self.shap_explainer = shap.TreeExplainer(model{', X_background' if self.X_background is not None else ''})"
                         )
-                        try:
-                            self._shap_explainer = shap.TreeExplainer(
-                                self.model, self.X_background
-                            )
-                        except Exception as e:
-                            print(e)
-                            self._shap_explainer = shap.TreeExplainer(self.model, feature_perturbation="tree_path_dependent")
+                        self._shap_explainer = shap.TreeExplainer(
+                            self.model, self.X_background
+                        )
                 else:
                     if self.model_output == "probability":
                         print(
@@ -2815,14 +2804,14 @@ class ClassifierExplainer(BaseExplainer):
             _ = self.get_shap_values_df()  # CatBoost needs to have shap values calculated before expected value for some reason
             self._shap_base_value = self.shap_explainer.expected_value
             if (
-                    isinstance(self._shap_base_value, np.ndarray)
-                    and len(self._shap_base_value) == 1
+                isinstance(self._shap_base_value, np.ndarray)
+                and len(self._shap_base_value) == 1
             ):
                 self._shap_base_value = self._shap_base_value[0]
             if isinstance(self._shap_base_value, np.ndarray):
                 self._shap_base_value = list(self._shap_base_value)
             if len(self.labels) == 2 and isinstance(
-                    self._shap_base_value, (np.floating, float)
+                self._shap_base_value, (np.floating, float)
             ):
                 if self.model_output == "probability":
                     self._shap_base_value = [
@@ -2835,8 +2824,8 @@ class ClassifierExplainer(BaseExplainer):
                         self._shap_base_value,
                     ]
             assert len(self._shap_base_value) == len(self.labels), (
-                    f"len(shap_explainer.expected_value)={len(self._shap_base_value)}"
-                    + f"and len(labels)={len(self.labels)} do not match!"
+                f"len(shap_explainer.expected_value)={len(self._shap_base_value)}"
+                + f"and len(labels)={len(self.labels)} do not match!"
             )
             if self.model_output == "probability":
                 for shap_base_value in self._shap_base_value:
@@ -2864,16 +2853,16 @@ class ClassifierExplainer(BaseExplainer):
 
             if len(self.labels) == 2:
                 if (
-                        isinstance(_shap_values, np.ndarray)
-                        and len(_shap_values.shape) == 3
-                        and _shap_values.shape[2] == 2
+                    isinstance(_shap_values, np.ndarray)
+                    and len(_shap_values.shape) == 3
+                    and _shap_values.shape[2] == 2
                 ):
                     # for binary classifier only keep positive class:
                     _shap_values = _shap_values[:, :, 1]
                 elif (
-                        isinstance(_shap_values, np.ndarray)
-                        and len(_shap_values.shape) == 3
-                        and _shap_values.shape[2] > 2
+                    isinstance(_shap_values, np.ndarray)
+                    and len(_shap_values.shape) == 3
+                    and _shap_values.shape[2] > 2
                 ):
                     raise Exception(
                         f"len(self.label)={len(self.labels)}, but "
@@ -2892,8 +2881,8 @@ class ClassifierExplainer(BaseExplainer):
                     )
             else:
                 if (
-                        isinstance(_shap_values, np.ndarray)
-                        and len(_shap_values.shape) == 3
+                    isinstance(_shap_values, np.ndarray)
+                    and len(_shap_values.shape) == 3
                 ):
                     _shap_values = [
                         _shap_values[:, :, i] for i in range(_shap_values.shape[2])
@@ -2965,7 +2954,7 @@ class ClassifierExplainer(BaseExplainer):
                 depending on whether the shap values are for probabilities or logodds.
         """
         if isinstance(base_value, np.ndarray) and base_value.shape == (
-                len(self.labels),
+            len(self.labels),
         ):
             base_value = list(base_value)
         if not isinstance(base_value, list):
@@ -3027,9 +3016,9 @@ class ClassifierExplainer(BaseExplainer):
             elif isinstance(sv, list) and len(sv) > 1:
                 shap_row = pd.DataFrame(sv[pos_label], columns=self.columns)
             elif (
-                    len(self.labels) == 2
-                    and isinstance(sv, np.ndarray)
-                    and len(sv.shape) == 2
+                len(self.labels) == 2
+                and isinstance(sv, np.ndarray)
+                and len(sv.shape) == 2
             ):
                 if pos_label == 1:
                     shap_row = pd.DataFrame(sv, columns=self.columns)
@@ -3087,23 +3076,23 @@ class ClassifierExplainer(BaseExplainer):
             )
             if len(self.labels) == 2:
                 if (
-                        isinstance(self._shap_interaction_values, np.ndarray)
-                        and len(self._shap_interaction_values.shape) == 4
-                        and self._shap_interaction_values.shape[3] == 2
+                    isinstance(self._shap_interaction_values, np.ndarray)
+                    and len(self._shap_interaction_values.shape) == 4
+                    and self._shap_interaction_values.shape[3] == 2
                 ):
                     # for binary classifier only keep positive class:
                     self._shap_interaction_values = [
                         self._shap_interaction_values[:, :, :, 1]
                     ]
                 elif (
-                        isinstance(self._shap_interaction_values, np.ndarray)
-                        and len(self._shap_interaction_values.shape) == 3
+                    isinstance(self._shap_interaction_values, np.ndarray)
+                    and len(self._shap_interaction_values.shape) == 3
                 ):
                     # for binary classifier only keep positive class:
                     self._shap_interaction_values = [self._shap_interaction_values]
                 elif (
-                        isinstance(self._shap_interaction_values, list)
-                        and len(self._shap_interaction_values) == 2
+                    isinstance(self._shap_interaction_values, list)
+                    and len(self._shap_interaction_values) == 2
                 ):
                     # for binary classifier only keep positive class
                     self._shap_interaction_values = [self._shap_interaction_values[1]]
@@ -3116,9 +3105,9 @@ class ClassifierExplainer(BaseExplainer):
                     )
             else:
                 if (
-                        isinstance(self._shap_interaction_values, np.ndarray)
-                        and len(self._shap_interaction_values.shape) == 4
-                        and self._shap_interaction_values.shape[3] > 2
+                    isinstance(self._shap_interaction_values, np.ndarray)
+                    and len(self._shap_interaction_values.shape) == 4
+                    and self._shap_interaction_values.shape[3] > 2
                 ):
                     self._shap_interaction_values = [
                         self._shap_interaction_values[:, :, :, i]
@@ -3175,9 +3164,9 @@ class ClassifierExplainer(BaseExplainer):
             if not isinstance(siv, np.ndarray):
                 raise ValueError("each element of shap_values should be an np.ndarray!")
             if siv.shape != (
-                    len(self.X),
-                    len(self.original_cols),
-                    len(self.original_cols),
+                len(self.X),
+                len(self.original_cols),
+                len(self.original_cols),
             ):
                 raise ValueError(
                     f"Expected shap interaction values to have shape of "
@@ -3266,10 +3255,10 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def metrics(
-            self,
-            cutoff: float = 0.5,
-            show_metrics: List[Union[str, Callable]] = None,
-            pos_label: int = None,
+        self,
+        cutoff: float = 0.5,
+        show_metrics: List[Union[str, Callable]] = None,
+        pos_label: int = None,
     ):
         """returns a dict with useful metrics for your classifier:
 
@@ -3322,7 +3311,7 @@ class ClassifierExplainer(BaseExplainer):
                         "log_loss": [],
                     }
             for train_index, test_index in KFold(n_splits=n_splits, shuffle=True).split(
-                    self.X
+                self.X
             ):
                 X_train, X_test = self.X.iloc[train_index], self.X.iloc[test_index]
                 y_train, y_test = self.y.iloc[train_index], self.y.iloc[test_index]
@@ -3429,15 +3418,15 @@ class ClassifierExplainer(BaseExplainer):
             if k == "accuracy":
                 metrics_descriptions_dict[
                     k
-                ] = f"{100 * v:.{round}f}% of predicted labels was predicted correctly."
+                ] = f"{100*v:.{round}f}% of predicted labels was predicted correctly."
             if k == "precision":
                 metrics_descriptions_dict[
                     k
-                ] = f"{100 * v:.{round}f}% of predicted positive labels was predicted correctly."
+                ] = f"{100*v:.{round}f}% of predicted positive labels was predicted correctly."
             if k == "recall":
                 metrics_descriptions_dict[
                     k
-                ] = f"{100 * v:.{round}f}% of positive labels was predicted correctly."
+                ] = f"{100*v:.{round}f}% of positive labels was predicted correctly."
             if k == "f1":
                 metrics_descriptions_dict[
                     k
@@ -3445,7 +3434,7 @@ class ClassifierExplainer(BaseExplainer):
             if k == "roc_auc_score":
                 metrics_descriptions_dict[
                     k
-                ] = f"The probability that a random positive label has a higher score than a random negative label is {100 * v:.2f}%"
+                ] = f"The probability that a random positive label has a higher score than a random negative label is {100*v:.2f}%"
             if k == "pr_auc_score":
                 metrics_descriptions_dict[
                     k
@@ -3458,14 +3447,14 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def random_index(
-            self,
-            y_values=None,
-            return_str=False,
-            pred_proba_min=None,
-            pred_proba_max=None,
-            pred_percentile_min=None,
-            pred_percentile_max=None,
-            pos_label=None,
+        self,
+        y_values=None,
+        return_str=False,
+        pred_proba_min=None,
+        pred_proba_max=None,
+        pred_percentile_min=None,
+        pred_percentile_max=None,
+        pos_label=None,
     ):
         """random index satisfying various constraint
 
@@ -3484,11 +3473,11 @@ class ClassifierExplainer(BaseExplainer):
         """
         # if pos_label is None: pos_label = self.pos_label
         if (
-                y_values is None
-                and pred_proba_min is None
-                and pred_proba_max is None
-                and pred_percentile_min is None
-                and pred_percentile_max is None
+            y_values is None
+            and pred_proba_min is None
+            and pred_proba_max is None
+            and pred_percentile_min is None
+            and pred_percentile_max is None
         ):
             potential_idxs = self.idxs.values
         else:
@@ -3519,7 +3508,7 @@ class ClassifierExplainer(BaseExplainer):
                     & (pred_probas <= pred_proba_max)
                     & (pred_percentiles > pred_percentile_min)
                     & (pred_percentiles <= pred_percentile_max)
-                    ].values
+                ].values
 
             else:
                 potential_idxs = self.idxs[
@@ -3527,7 +3516,7 @@ class ClassifierExplainer(BaseExplainer):
                     & (pred_probas <= pred_proba_max)
                     & (pred_percentiles > pred_percentile_min)
                     & (pred_percentiles <= pred_percentile_max)
-                    ].values
+                ].values
 
         if len(potential_idxs) > 0:
             idx = np.random.choice(potential_idxs)
@@ -3538,7 +3527,7 @@ class ClassifierExplainer(BaseExplainer):
         return self.idxs.get_loc(idx)
 
     def prediction_result_df(
-            self, index=None, X_row=None, add_star=True, logodds=False, round=3
+        self, index=None, X_row=None, add_star=True, logodds=False, round=3
     ):
         """returns a table with the predicted probability for each label for index
 
@@ -3577,7 +3566,7 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def get_precision_df(
-            self, bin_size=None, quantiles=None, multiclass=False, round=3, pos_label=None
+        self, bin_size=None, quantiles=None, multiclass=False, round=3, pos_label=None
     ):
         """dataframe with predicted probabilities and precision
 
@@ -3654,10 +3643,10 @@ class ClassifierExplainer(BaseExplainer):
             clas_df = pd.DataFrame(index=pd.RangeIndex(0, len(self.labels)))
             clas_df["below"] = self.y[
                 self.pred_probas(pos_label) < cutoff
-                ].value_counts()
+            ].value_counts()
             clas_df["above"] = self.y[
                 self.pred_probas(pos_label) >= cutoff
-                ].value_counts()
+            ].value_counts()
             clas_df = clas_df.fillna(0)
             clas_df["total"] = clas_df.sum(axis=1)
             clas_df.index = self.labels
@@ -3748,12 +3737,12 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def plot_precision(
-            self,
-            bin_size=None,
-            quantiles=None,
-            cutoff=None,
-            multiclass=False,
-            pos_label=None,
+        self,
+        bin_size=None,
+        quantiles=None,
+        cutoff=None,
+        multiclass=False,
+        pos_label=None,
     ):
         """plot precision vs predicted probability
 
@@ -3810,12 +3799,12 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def plot_confusion_matrix(
-            self,
-            cutoff=0.5,
-            percentage=False,
-            normalize="all",
-            binary=False,
-            pos_label=None,
+        self,
+        cutoff=0.5,
+        percentage=False,
+        normalize="all",
+        binary=False,
+        pos_label=None,
     ):
         """plot of a confusion matrix.
 
@@ -3868,7 +3857,7 @@ class ClassifierExplainer(BaseExplainer):
 
     @insert_pos_label
     def plot_lift_curve(
-            self, cutoff=None, percentage=False, add_wizard=True, round=2, pos_label=None
+        self, cutoff=None, percentage=False, add_wizard=True, round=2, pos_label=None
     ):
         """plot of a lift curve.
 
@@ -3999,28 +3988,27 @@ class RegressionExplainer(BaseExplainer):
     """ """
 
     def __init__(
-            self,
-            model,
-            X: pd.DataFrame,
-            y: pd.Series = None,
-            permutation_metric: Callable = r2_score,
-            shap: str = "guess",
-            X_background: pd.DataFrame = None,
-            model_output: str = "raw",
-            cats: Union[List, Dict] = None,
-            cats_notencoded: Dict = None,
-            idxs: pd.Index = None,
-            index_name: str = None,
-            target: str = None,
-            descriptions: Dict = None,
-            n_jobs: int = None,
-            permutation_cv: int = None,
-            cv: int = None,
-            na_fill: float = -999,
-            precision: str = "float64",
-            shap_kwargs: Dict = None,
-            units: str = "",
-            X_train=None
+        self,
+        model,
+        X: pd.DataFrame,
+        y: pd.Series = None,
+        permutation_metric: Callable = r2_score,
+        shap: str = "guess",
+        X_background: pd.DataFrame = None,
+        model_output: str = "raw",
+        cats: Union[List, Dict] = None,
+        cats_notencoded: Dict = None,
+        idxs: pd.Index = None,
+        index_name: str = None,
+        target: str = None,
+        descriptions: Dict = None,
+        n_jobs: int = None,
+        permutation_cv: int = None,
+        cv: int = None,
+        na_fill: float = -999,
+        precision: str = "float64",
+        shap_kwargs: Dict = None,
+        units: str = "",
     ):
         """Explainer for regression models.
 
@@ -4094,7 +4082,6 @@ class RegressionExplainer(BaseExplainer):
             na_fill,
             precision,
             shap_kwargs,
-            X_train
         )
 
         self._params_dict = {**self._params_dict, **dict(units=units)}
@@ -4129,17 +4116,17 @@ class RegressionExplainer(BaseExplainer):
         return self._abs_residuals
 
     def random_index(
-            self,
-            y_min=None,
-            y_max=None,
-            pred_min=None,
-            pred_max=None,
-            residuals_min=None,
-            residuals_max=None,
-            abs_residuals_min=None,
-            abs_residuals_max=None,
-            return_str=False,
-            **kwargs,
+        self,
+        y_min=None,
+        y_max=None,
+        pred_min=None,
+        pred_max=None,
+        residuals_min=None,
+        residuals_max=None,
+        abs_residuals_min=None,
+        abs_residuals_max=None,
+        return_str=False,
+        **kwargs,
     ):
         """random index following to various exclusion criteria
 
@@ -4166,7 +4153,7 @@ class RegressionExplainer(BaseExplainer):
                 pred_max = self.preds.max()
             potential_idxs = self.idxs[
                 (self.preds >= pred_min) & (self.preds <= pred_max)
-                ].values
+            ].values
         else:
             if y_min is None:
                 y_min = self.y.min()
@@ -4194,7 +4181,7 @@ class RegressionExplainer(BaseExplainer):
                 & (self.residuals <= residuals_max)
                 & (self.abs_residuals >= abs_residuals_min)
                 & (self.abs_residuals <= abs_residuals_max)
-                ].values
+            ].values
 
         if len(potential_idxs) > 0:
             idx = np.random.choice(potential_idxs)
@@ -4240,7 +4227,7 @@ class RegressionExplainer(BaseExplainer):
                     preds_df,
                     {
                         "": "Residual",
-                        self.target: f"{(y_true - pred):.{round}f} {self.units}",
+                        self.target: f"{(y_true-pred):.{round}f} {self.units}",
                     },
                 )
             except Exception:
@@ -4249,10 +4236,10 @@ class RegressionExplainer(BaseExplainer):
 
     def dir_accuracy(self, y, preds):
         sign = y.values * preds
-        if len(sign) == 0:
-            accuracy_dir = 0
+        if len(sign)==0:
+            accuracy_dir=0
         else:
-            accuracy_dir = round(len(sign[sign > 0]) / len(sign), 2)
+            accuracy_dir = round(len(sign[sign>0])/len(sign),2)
         return accuracy_dir
 
     def metrics(self, show_metrics: List[str] = None):
@@ -4269,7 +4256,7 @@ class RegressionExplainer(BaseExplainer):
             )
         if self.cv is None:
             metrics_dict = {
-                "direction accuracy": self.dir_accuracy(self.y, self.preds),
+                "direction accuracy":self.dir_accuracy(self.y, self.preds),
                 "mean-squared-error": mean_squared_error(self.y, self.preds),
                 "root-mean-squared-error": np.sqrt(
                     mean_squared_error(self.y, self.preds)
@@ -4287,7 +4274,7 @@ class RegressionExplainer(BaseExplainer):
                 "R-squared": [],
             }
             for train_index, test_index in KFold(n_splits=self.cv, shuffle=True).split(
-                    self.X
+                self.X
             ):
                 X_train, X_test = self.X.iloc[train_index], self.X.iloc[test_index]
                 y_train, y_test = self.y.iloc[train_index], self.y.iloc[test_index]
@@ -4361,18 +4348,18 @@ class RegressionExplainer(BaseExplainer):
             if k == "mean-absolute-percentage-error":
                 metrics_descriptions_dict[k] = (
                     f"On average predictions deviate "
-                    f"{100 * v:.{round}f}% off the observed value of "
+                    f"{100*v:.{round}f}% off the observed value of "
                     f"{self.target} (can be both above or below)"
                 )
             if k == "R-squared":
                 metrics_descriptions_dict[k] = (
-                    f"{100 * v:.{round}f}% of all "
+                    f"{100*v:.{round}f}% of all "
                     f"variation in {self.target} was explained by the model."
                 )
         return metrics_descriptions_dict
 
     def plot_predicted_vs_actual(
-            self, round=2, logs=False, log_x=False, log_y=False, plot_sample=None, **kwargs
+        self, round=2, logs=False, log_x=False, log_y=False, plot_sample=None, **kwargs
     ):
         """plot with predicted value on x-axis and actual value on y axis.
 
@@ -4408,7 +4395,7 @@ class RegressionExplainer(BaseExplainer):
         )
 
     def plot_residuals(
-            self, vs_actual=False, round=2, residuals="difference", plot_sample=None
+        self, vs_actual=False, round=2, residuals="difference", plot_sample=None
     ):
         """plot of residuals. x-axis is the predicted outcome by default
 
@@ -4442,16 +4429,16 @@ class RegressionExplainer(BaseExplainer):
         )
 
     def plot_residuals_vs_feature(
-            self,
-            col,
-            residuals="difference",
-            round=2,
-            dropna=True,
-            points=True,
-            winsor=0,
-            topx=None,
-            sort="alphabet",
-            plot_sample=None,
+        self,
+        col,
+        residuals="difference",
+        round=2,
+        dropna=True,
+        points=True,
+        winsor=0,
+        topx=None,
+        sort="alphabet",
+        plot_sample=None,
     ):
         """Plot residuals vs individual features
 
@@ -4507,16 +4494,16 @@ class RegressionExplainer(BaseExplainer):
             )
 
     def plot_y_vs_feature(
-            self,
-            col,
-            residuals="difference",
-            round=2,
-            dropna=True,
-            points=True,
-            winsor=0,
-            topx=None,
-            sort="alphabet",
-            plot_sample=None,
+        self,
+        col,
+        residuals="difference",
+        round=2,
+        dropna=True,
+        points=True,
+        winsor=0,
+        topx=None,
+        sort="alphabet",
+        plot_sample=None,
     ):
         """Plot y vs individual features
 
@@ -4574,16 +4561,16 @@ class RegressionExplainer(BaseExplainer):
             )
 
     def plot_preds_vs_feature(
-            self,
-            col,
-            residuals="difference",
-            round=2,
-            dropna=True,
-            points=True,
-            winsor=0,
-            topx=None,
-            sort="alphabet",
-            plot_sample=None,
+        self,
+        col,
+        residuals="difference",
+        round=2,
+        dropna=True,
+        points=True,
+        winsor=0,
+        topx=None,
+        sort="alphabet",
+        plot_sample=None,
     ):
         """Plot y vs individual features
 
@@ -4692,7 +4679,7 @@ class TreeExplainer(BaseExplainer):
 
         """
         assert (
-                tree_idx >= 0 and tree_idx < len(self.shadow_trees)
+            tree_idx >= 0 and tree_idx < len(self.shadow_trees)
         ), f"tree index {tree_idx} outside 0 and number of trees ({len(self.decision_trees)}) range"
         X_row = self.get_X_row(index)
         if self.is_classifier:
@@ -4793,7 +4780,7 @@ class TreeExplainer(BaseExplainer):
 
     @insert_pos_label
     def plot_trees(
-            self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
+        self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
     ):
         """plot barchart predictions of each individual prediction tree
 
@@ -4862,7 +4849,7 @@ class RandomForestExplainer(TreeExplainer):
 
     @insert_pos_label
     def plot_trees(
-            self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
+        self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
     ):
         """plot barchart predictions of each individual prediction tree
 
@@ -4965,7 +4952,7 @@ class XGBExplainer(TreeExplainer):
 
         """
         assert (
-                tree_idx >= 0 and tree_idx < self.no_of_trees
+            tree_idx >= 0 and tree_idx < self.no_of_trees
         ), f"tree index {tree_idx} outside 0 and number of trees ({len(self.decision_trees)}) range"
 
         if self.is_classifier:
@@ -5025,7 +5012,7 @@ class XGBExplainer(TreeExplainer):
 
     @insert_pos_label
     def plot_trees(
-            self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
+        self, index, highlight_tree=None, round=2, higher_is_better=True, pos_label=None
     ):
         """plot barchart predictions of each individual prediction tree
 
