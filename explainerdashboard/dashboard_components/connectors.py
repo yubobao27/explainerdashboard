@@ -20,7 +20,7 @@ class CutoffPercentileComponent(ExplainerComponent):
     def __init__(
         self,
         explainer,
-        title="Global cutoff",
+        title="cutoff threshold",
         name=None,
         hide_title=False,
         hide_cutoff=False,
